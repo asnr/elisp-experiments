@@ -21,6 +21,6 @@
   (let ((stopwatch-timer
          (run-at-time t 1 (update-stopwatch-function stopwatch-buffer))))
     (add-hook 'kill-buffer-hook
-              #'(lambda () (when (buffers= (current-buffer) stopwatch-buffer)
-                             (print (concat "Stop timer at buffer " (buffer-name)))
-                             (cancel-timer stopwatch-timer))))))
+              (lambda () (when (buffers= (current-buffer) stopwatch-buffer)
+                           (print (concat "Stop timer at buffer " (buffer-name)))
+                           (cancel-timer stopwatch-timer))))))
