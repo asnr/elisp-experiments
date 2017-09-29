@@ -29,7 +29,7 @@
   (setq stopwatch-buffer (generate-new-buffer "stopwatch"))
   (with-current-buffer stopwatch-buffer
     (insert (number-to-string 0)))
-  (setq new-window (split-window))
-  (set-window-buffer new-window stopwatch-buffer)
+  (setq stopwatch-window (split-window))
+  (set-window-buffer stopwatch-window stopwatch-buffer)
   (start-stopwatch stopwatch-buffer)
-  (select-window new-window))
+  (select-window stopwatch-window))
