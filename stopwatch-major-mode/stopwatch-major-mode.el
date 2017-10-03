@@ -1,5 +1,18 @@
 ;; -*- lexical-binding: t; -*-
 
+(define-derived-mode stopwatch-mode special-mode "Stopwatch"
+  "Major mode for stopwatch."
+  ;; Should try and make this read only for the user but then how do we update
+  ;; The buffer on every tick without throwing an error?
+  (read-only-mode 0))
+
+(define-key stopwatch-mode-map "q" 'kill-buffer-and-window)
+
+;; By default, the evil normal mode keymaps will take precedence over the
+;; stopwatch-mode-map and "q" will resolve to evil-record-macro. Make evil use
+;; the Emacs state for stopwatch mode.
+(add-to-list 'evil-emacs-state-modes 'stopwatch-mode)
+
 (defun make-stopwatch-updater (stopwatch-buffer)
   (let ((elapsed-seconds 0))
     (lambda ()
@@ -25,12 +38,6 @@
          (run-at-time t 1 (make-stopwatch-updater stopwatch-buffer))))
     (add-hook 'kill-buffer-hook
               (make-stopwatch-finaliser stopwatch-buffer stopwatch-timer))))
-
-(define-derived-mode stopwatch-mode special-mode "Stopwatch"
-  "Major mode for stopwatch."
-  ;; Should try and make this read only for the user but then how do we update
-  ;; the buffer on every tick without throwing an error?
-  (read-only-mode 0))
 
 (progn
   (setq stopwatch-buffer (generate-new-buffer "stopwatch"))
