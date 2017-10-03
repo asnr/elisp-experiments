@@ -17,10 +17,9 @@
   (let ((elapsed-seconds 0))
     (lambda ()
       (with-current-buffer stopwatch-buffer
-        (erase-buffer)
+        (delete-region 19 (point-max))
         (setq elapsed-seconds (1+ elapsed-seconds))
-        (let ((inhibit-read-only t))
-          (insert (number-to-string elapsed-seconds)))))))
+        (insert (number-to-string elapsed-seconds))))))
 
 (defun buffers= (buffer other-buffer)
   (string= (buffer-name buffer) (buffer-name other-buffer)))
@@ -37,11 +36,15 @@
     (add-hook 'kill-buffer-hook
               (make-stopwatch-finaliser stopwatch-buffer stopwatch-timer))))
 
+(defun initialise-stopwatch-buffer-and-set-mode (stopwatch-buffer)
+  (with-current-buffer stopwatch-buffer
+    (insert "Press 'q' to quit\n")
+    (insert (number-to-string 0))
+    (stopwatch-mode)))
+
 (progn
   (setq stopwatch-buffer (generate-new-buffer "stopwatch"))
-  (with-current-buffer stopwatch-buffer
-    (insert (number-to-string 0))
-    (stopwatch-mode))
+  (initialise-stopwatch-buffer-and-set-mode stopwatch-buffer)
   (setq stopwatch-window (split-window))
   (set-window-buffer stopwatch-window stopwatch-buffer)
   (start-stopwatch stopwatch-buffer)
