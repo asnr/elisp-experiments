@@ -23,9 +23,7 @@
           (insert (number-to-string elapsed-seconds)))))))
 
 (defun buffers= (buffer other-buffer)
-  (if (string= (buffer-name buffer) (buffer-name other-buffer))
-      t
-    nil))
+  (string= (buffer-name buffer) (buffer-name other-buffer)))
 
 (defun make-stopwatch-finaliser (stopwatch-buffer stopwatch-timer)
   (lambda ()
