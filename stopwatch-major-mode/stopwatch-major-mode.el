@@ -13,39 +13,75 @@
 ;; the Emacs state for stopwatch mode.
 (add-to-list 'evil-emacs-state-modes 'stopwatch-mode)
 
-(defun make-stopwatch-updater (stopwatch-buffer)
-  (let ((elapsed-seconds 0))
-    (lambda ()
-      (with-current-buffer stopwatch-buffer
-        (delete-region 19 (point-max))
-        (setq elapsed-seconds (1+ elapsed-seconds))
-        (insert (number-to-string elapsed-seconds))))))
-
 (defun buffers= (buffer other-buffer)
   (string= (buffer-name buffer) (buffer-name other-buffer)))
 
-(defun make-stopwatch-finaliser (stopwatch-buffer stopwatch-timer)
-  (lambda ()
-    (when (buffers= (current-buffer) stopwatch-buffer)
-      (print (concat "Stop timer at buffer " (buffer-name)))
-      (cancel-timer stopwatch-timer))))
+(defconst STOPWATCH-INSTRUCTIONS "Press 'q' to quit")
 
-(defun start-stopwatch (stopwatch-buffer)
-  (let ((stopwatch-timer
-         (run-at-time t 1 (make-stopwatch-updater stopwatch-buffer))))
-    (add-hook 'kill-buffer-hook
-              (make-stopwatch-finaliser stopwatch-buffer stopwatch-timer))))
+(defun stopwatch-construct (stopwatch-buffer)
+  (list (cons 'buffer stopwatch-buffer)
+        (cons 'window nil)
+        (cons 'timer nil)
+        (cons 'elapsed-seconds 0)))
 
-(defun initialise-stopwatch-buffer-and-set-mode (stopwatch-buffer)
-  (with-current-buffer stopwatch-buffer
-    (insert "Press 'q' to quit\n")
-    (insert (number-to-string 0))
+(defun stopwatch-start (stopwatch)
+  (stopwatch--init-buffer stopwatch)
+  (stopwatch--start stopwatch)
+  (stopwatch--open-window stopwatch)
+  (stopwatch--attach-stop-hook stopwatch))
+
+(defun stopwatch--init-buffer (stopwatch)
+  (with-current-buffer (stopwatch--get-buffer stopwatch)
+    (insert STOPWATCH-INSTRUCTIONS)
+    (insert "\n")
+    (insert (number-to-string (stopwatch--get-elapsed-seconds stopwatch)))
     (stopwatch-mode)))
 
+(defun stopwatch--open-window (stopwatch)
+  (let ((window (split-window)))
+    (stopwatch--set-window stopwatch window)
+    (set-window-buffer window (stopwatch--get-buffer stopwatch))
+    (select-window window)))
+
+(defun stopwatch--start (stopwatch)
+  (let ((timer (run-at-time t 1 (stopwatch--make-updater stopwatch))))
+    (stopwatch--set-timer stopwatch timer)))
+
+(defun stopwatch--make-updater (stopwatch)
+  (lambda ()
+    (with-current-buffer (stopwatch--get-buffer stopwatch)
+      (delete-region 19 (point-max))
+      (let ((elapsed-seconds (1+ (stopwatch--get-elapsed-seconds stopwatch))))
+        (stopwatch--set-elapsed-seconds stopwatch elapsed-seconds)
+        (insert (number-to-string elapsed-seconds))))))
+
+(defun stopwatch--attach-stop-hook (stopwatch)
+  (add-hook 'kill-buffer-hook (lambda () (stopwatch--stop stopwatch))))
+
+(defun stopwatch--stop (stopwatch)
+  (when (buffers= (current-buffer) (stopwatch--get-buffer stopwatch))
+    (print (concat "Stop timer at buffer " (buffer-name)))
+    (cancel-timer (stopwatch--get-timer stopwatch))))
+
+(defun stopwatch--get-buffer (stopwatch)
+  (cdr (assoc 'buffer stopwatch)))
+
+(defun stopwatch--set-window (stopwatch window)
+  (setf (cdr (assoc 'window stopwatch)) window))
+
+(defun stopwatch--get-timer (stopwatch)
+  (cdr (assoc 'timer stopwatch)))
+
+(defun stopwatch--set-timer (stopwatch timer)
+  (setf (cdr (assoc 'timer stopwatch)) timer))
+
+(defun stopwatch--get-elapsed-seconds (stopwatch)
+  (cdr (assoc 'elapsed-seconds stopwatch)))
+
+(defun stopwatch--set-elapsed-seconds (stopwatch elapsed-seconds)
+  (setf (cdr (assoc 'elapsed-seconds stopwatch)) elapsed-seconds))
+
 (progn
-  (setq stopwatch-buffer (generate-new-buffer "stopwatch"))
-  (initialise-stopwatch-buffer-and-set-mode stopwatch-buffer)
-  (setq stopwatch-window (split-window))
-  (set-window-buffer stopwatch-window stopwatch-buffer)
-  (start-stopwatch stopwatch-buffer)
-  (select-window stopwatch-window))
+  (let* ((stopwatch-buffer (generate-new-buffer "stopwatch"))
+         (stopwatch (stopwatch-construct stopwatch-buffer)))
+    (stopwatch-start stopwatch)))
